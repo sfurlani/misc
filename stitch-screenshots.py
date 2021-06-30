@@ -20,12 +20,14 @@ modeBG = {
   Mode.RGBA: 0
 }
 spacing = 1
+quality = 95
 
 parser = argparse.ArgumentParser(description="Horizontally stitch some images together")
 parser.add_argument("-o", dest="output", type=str, help=f"Output file (default: {outfile}) - if the path is not specified, it uses the path of the first input file", default=outfile)
 parser.add_argument("-s", dest="spacing", type=int, help=f"Horizontal spacing between images in pixels (default: {spacing})", default=spacing)
 parser.add_argument("-O", dest="shouldOpen", type=bool, help="Whether or not to open the destination folder when finished", default=True)
 parser.add_argument("-m", dest="mode", type=str, help=f"Output file format (default: {mode})", choices=modeChoices, default=mode)
+parser.add_argument("-q", dest="quality", type=int, help=f"Output jpeg quality - valid for mode=RGB only - (default: {quality})", default=quality)
 parser.add_argument("input", metavar="F", type=str, nargs='+', help="The list of image files to stitch together, leave empty to be prompted")
 
 args = parser.parse_args()
@@ -49,12 +51,13 @@ def unescapePath(inpath):
 # Saves the image based on mode
 def saveImage(mode, img, out):
   switcher = {
-    Mode.RGB: lambda i,o: i.save(o, quality='web_high'), # https://github.com/python-pillow/Pillow/blob/master/src/PIL/JpegPresets.py
+    Mode.RGB: lambda i,o: i.save(o, quality=quality), # https://github.com/python-pillow/Pillow/blob/master/src/PIL/JpegPresets.py
     Mode.RGBA: lambda i,o: i.save(o)
   }
   switcher.get(mode)(img, out)
 
 mode = Mode(args.mode)
+quality = args.quality
 
 # Output Filepath
 outfile = args.output
