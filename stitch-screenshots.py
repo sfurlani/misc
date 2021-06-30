@@ -1,4 +1,4 @@
-import os, sys
+import os, argparse, subprocess
 import re
 from PIL import Image
 
@@ -22,15 +22,18 @@ def unescapePath(inpath):
   return inpath.replace(r'\ ', ' ')
 
 outfile = "~/Pictures/stitched.jpg"
-inp = input("Enter output file name (default: \"" + outfile + "\"): ")
-if inp and not inp.isspace():
-  outfile = inp
+inp = input("Enter output file name: ")
 
-outpath = os.path.expanduser(outfile)
+# if input isn't whitespace
+if inp and not inp.isspace():
+  # if it doesn't include a file extension
+  if "." not in inp:
+    inp = inp + ".jpg"
+  outfile = inp
 
 infiles = []
 
-print("Enter Image Files to stitch (leave empty to finish)")
+print("Enter Image Files to stitch (paste a list or leave empty to finish)")
 while True:
   inp = input("-> ")
   if not inp:
@@ -49,11 +52,20 @@ if not infiles:
   exit()
 
 unescaped = map(unescapePath, infiles)
-inpaths = map(os.path.expanduser, unescaped)
+inpaths = list(map(os.path.expanduser, unescaped))
 
 if not inpaths:
-  print("No Fully-qualified paths, exiting...")
+  print("No Fully-qualified input paths, exiting...")
   exit()
+
+if "/" not in outfile:
+  firstPath = os.path.dirname(inpaths[0])
+  if firstPath and not firstPath.isspace():
+    outfile = firstPath + "/" + outfile
+  else:
+    outfile = "~/Pictures/" + outfile
+
+outpath = os.path.expanduser(outfile)
 
 maybeImages = map(loadImage, inpaths)
 images = list(filter(None, maybeImages))
@@ -62,7 +74,7 @@ if not images:
   print("No Images to Process, exiting..")
   exit()
 
-width = 0
+width = spacing
 height = 0
 
 for image in images:
@@ -73,7 +85,7 @@ canvas = Image.new(mode=mode, size=(width,height))
 
 print("<- ", outpath, canvas.format, canvas.size, canvas.mode)
 
-x = 0
+x = spacing
 y = 0
 
 for image in images:
@@ -81,5 +93,8 @@ for image in images:
   x += image.size[0] + spacing
   # image.close()
 
-canvas.save(outpath)
+# https://github.com/python-pillow/Pillow/blob/master/src/PIL/JpegPresets.py
+canvas.save(outpath, quality='web_high')
 # canvas.close()
+
+subprocess.Popen(["open", os.path.dirname(outpath)])
