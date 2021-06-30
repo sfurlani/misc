@@ -8,7 +8,7 @@ class Mode(Enum):
   RGB = "RGB"
   RGBA = "RGBA"
 
-outfile = "~/Pictures/stitched.jpg"
+outfile = "stitched"
 modeChoices = [Mode.RGB.value, Mode.RGBA.value]
 mode = Mode.RGB
 modeExt = {
@@ -22,13 +22,13 @@ modeBG = {
 spacing = 1
 quality = 95
 
-parser = argparse.ArgumentParser(description="Horizontally stitch some images together")
-parser.add_argument("-o", dest="output", type=str, help=f"Output file (default: {outfile}) - if the path is not specified, it uses the path of the first input file", default=outfile)
+parser = argparse.ArgumentParser(description="Horizontally stitch some images together", formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument("-o", dest="output", type=str, help=f"Output file (default: ~/Pictures/{outfile}.jpg)\n\tNote: if the path is not specified, it uses the path of the first input file\n\tNote: if the extension is not specified, it uses one approrpriate for the selected mode", default=outfile)
 parser.add_argument("-s", dest="spacing", type=int, help=f"Horizontal spacing between images in pixels (default: {spacing})", default=spacing)
 parser.add_argument("-O", dest="shouldOpen", type=bool, help="Whether or not to open the destination folder when finished", default=True)
-parser.add_argument("-m", dest="mode", type=str, help=f"Output file format (default: {mode})", choices=modeChoices, default=mode)
+parser.add_argument("-m", dest="mode", type=str, help=f"Output file format (default: {mode.value})", choices=modeChoices, default=mode.value)
 parser.add_argument("-q", dest="quality", type=int, help=f"Output jpeg quality - valid for mode=RGB only - (default: {quality})", default=quality)
-parser.add_argument("input", metavar="F", type=str, nargs='+', help="The list of image files to stitch together, leave empty to be prompted")
+parser.add_argument("input", metavar="F", type=str, nargs='+', required=True, help="The list of image files to stitch together, leave empty to be prompted")
 
 args = parser.parse_args()
 
