@@ -28,7 +28,7 @@ parser.add_argument("-s", dest="spacing", type=int, help=f"Horizontal spacing be
 parser.add_argument("-O", dest="shouldOpen", type=bool, help="Whether or not to open the destination folder when finished", default=True)
 parser.add_argument("-m", dest="mode", type=str, help=f"Output file format (default: {mode.value})", choices=modeChoices, default=mode.value)
 parser.add_argument("-q", dest="quality", type=int, help=f"Output jpeg quality - valid for mode=RGB only - (default: {quality})", default=quality)
-parser.add_argument("input", metavar="F", type=str, nargs='+', required=True, help="The list of image files to stitch together, leave empty to be prompted")
+parser.add_argument("input", metavar="F", type=str, nargs='+', help="The list of image files to stitch together, leave empty to be prompted")
 
 args = parser.parse_args()
 
@@ -120,12 +120,14 @@ for image in images:
   height = max(height, image.size[1])
   width += image.size[0] + spacing
 
+height += spacing * 2
+
 canvas = Image.new(mode=mode.value, size=(width,height), color=modeBG.get(mode))
 
 print("<- ", outpath, canvas.format, canvas.size, canvas.mode)
 
 x = spacing
-y = 0
+y = spacing
 
 for image in images:
   canvas.paste(image, (x, y))
