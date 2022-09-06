@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-import os, argparse, subprocess
+import os, argparse, subprocess, sys, math
 import re
+# python3 -m pip install --upgrade Pillow
 from PIL import Image
 from enum import Enum
 
@@ -22,13 +23,22 @@ modeBG = {
 spacing = 1
 quality = 95
 
+class Resize(Enum):
+  MIN = "min"
+  MAX = "max"
+  NONE = "none"
+
+resize = Resize.NONE
+resizeChoices = [Resize.MIN.value, Resize.MAX.value]
+
 parser = argparse.ArgumentParser(description="Horizontally stitch some images together", formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-o", dest="output", type=str, help=f"Output file (default: ~/Pictures/{outfile}.jpg)\n\tNote: if the path is not specified, it uses the path of the first input file\n\tNote: if the extension is not specified, it uses one approrpriate for the selected mode", default=outfile)
 parser.add_argument("-s", dest="spacing", type=int, help=f"Horizontal spacing between images in pixels (default: {spacing})", default=spacing)
 parser.add_argument("-O", dest="shouldOpen", type=bool, help="Whether or not to open the destination folder when finished", default=True)
 parser.add_argument("-m", dest="mode", type=str, help=f"Output file format (default: {mode.value})", choices=modeChoices, default=mode.value)
 parser.add_argument("-q", dest="quality", type=int, help=f"Output jpeg quality - valid for mode=RGB only - (default: {quality})", default=quality)
-parser.add_argument("input", metavar="F", type=str, nargs='+', help="The list of image files to stitch together, leave empty to be prompted")
+parser.add_argument("-r", dest="resize", type=str, help=f"Output file format (default: {resize.value})", choices=resizeChoices, default=resize.value)
+parser.add_argument("input", metavar="FILES", type=str, nargs='+', help="The list of image files to stitch together, leave empty to be prompted")
 
 args = parser.parse_args()
 
@@ -105,23 +115,43 @@ if "/" not in outfile:
 outpath = os.path.expanduser(outfile)
 
 maybeImages = map(loadImage, inpaths)
-images = list(filter(None, maybeImages))
+origImages = list(filter(None, maybeImages))
 
-if not images:
+if not origImages:
   print("No Images to Process, exiting..")
   exit()
 
 spacing = args.spacing
+resize = Resize(args.resize)
 
-width = spacing
-height = 0
+# canvas height
+height = sys.maxsize if resize == Resize.MIN else 0
 
+# Get Max or Min Canvas height
+for image in origImages:
+  if resize == Resize.MIN:
+    height = min(height, image.size[1])
+  else:
+    height = max(height, image.size[1])
+
+# Optionally resize
+def resizeImage(image):
+  # print("Old", image.size)
+  h = height
+  w = math.ceil(h * image.size[0] / image.size[1])
+  # print("New", (w,h))
+  return image.resize((w, h))
+
+images = origImages if resize == Resize.NONE else list(map(resizeImage, origImages))
+
+height += spacing * 2 # top and bottom margin
+
+# Determine canvas width
+width = spacing # left margin
 for image in images:
-  height = max(height, image.size[1])
   width += image.size[0] + spacing
 
-height += spacing * 2
-
+print("Height", height, "Width", width)
 canvas = Image.new(mode=mode.value, size=(width,height), color=modeBG.get(mode))
 
 print("<- ", outpath, canvas.format, canvas.size, canvas.mode)
@@ -130,6 +160,7 @@ x = spacing
 y = spacing
 
 for image in images:
+  print("Pasting", image, image.size, "to", (x, y))
   canvas.paste(image, (x, y))
   x += image.size[0] + spacing
   # image.close()
